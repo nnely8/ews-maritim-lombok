@@ -282,7 +282,3 @@ else:
 
     styled_tabel = df_tabel.style.format(precision=2)
     st.dataframe(styled_tabel, use_container_width=True, hide_index=True)
-    df_tabel = df_tabel[cols]
-
-    styled_tabel = df_tabel.style.format(precision=2)
-    st.dataframe(styled_tabel, use_container_width=True, hide_index=True)
