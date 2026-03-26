@@ -112,7 +112,8 @@ def fetch_all_data():
 
 # --- TAMPILAN DASHBOARD ---
 st.title("🌊 Peta Peringatan Dini Tinggi Gelombang Jalur Penyeberangan NTB")
-st.markdown("Monitoring Site: **Pelabuhan Lembar, Pemenang, Kayangan** *(Klik ikon stasiun di peta untuk melihat grafik)*")
+# 🎯 Teks petunjuk dihilangkan
+st.markdown("Monitoring Site: **Pelabuhan Lembar, Pemenang, Kayangan**")
 
 with st.spinner('Memuat peta dan menarik data dari AWSCenter...'):
     df, error = fetch_all_data()
@@ -160,20 +161,21 @@ else:
         # 🎯 LOGIKA WARNA PIN - UPDATE 5 KATEGORI
         wl_val = row['Water Level']
         if wl_val > BATAS_EKSTREM:
-            pin_color = 'black'; pin_icon = 'flash' # Petir hitam
+            pin_color = 'black'; pin_icon = 'flash' 
         elif wl_val >= BATAS_SANGAT_TINGGI:
-            pin_color = 'darkred'; pin_icon = 'exclamation-sign' # Merah tua
+            pin_color = 'darkred'; pin_icon = 'exclamation-sign' 
         elif wl_val >= BATAS_TINGGI:
-            pin_color = 'red'; pin_icon = 'warning-sign' # Merah terang
+            pin_color = 'red'; pin_icon = 'warning-sign' 
         elif wl_val >= BATAS_SEDANG:
-            pin_color = 'orange'; pin_icon = 'info-sign' # Orange
+            pin_color = 'orange'; pin_icon = 'info-sign' 
         else:
-            pin_color = 'green'; pin_icon = 'tint' # Hijau
+            pin_color = 'green'; pin_icon = 'tint' 
 
         folium.Marker(
             location=[row['lat'], row['lng']],
             popup=folium.Popup(popup_html, max_width=350),
-            tooltip=f"{row['name_station']} (Klik untuk lihat grafik)",
+            # 🎯 Teks petunjuk dihilangkan, sisa nama stasiun aja
+            tooltip=f"{row['name_station']}",
             icon=folium.Icon(color=pin_color, icon=pin_icon)
         ).add_to(m)
 
