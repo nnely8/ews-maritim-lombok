@@ -12,8 +12,12 @@ import plotly.graph_objects as go
 AWSCENTER_USERNAME = "97240"
 AWSCENTER_PASSWORD = "97240@2020"
 
-BATAS_WASPADA = 1.25
-BATAS_BAHAYA = 2.50  
+# 🎯 UPDATE BATAS PERINGATAN SESUAI STANDAR BMKG
+BATAS_SEDANG = 1.25
+BATAS_TINGGI = 2.50
+BATAS_SANGAT_TINGGI = 4.00
+BATAS_EKSTREM = 6.00
+
 HISTORY_FILE = "history_gelombang.csv"
 
 PARAM_MAP = {
@@ -28,6 +32,19 @@ PARAM_MAP = {
 }
 
 st.set_page_config(page_title="Peta EWS AWS Maritim", page_icon="🌊", layout="wide")
+
+# MENGHILANGKAN SPACE KOSONG DI ATAS (CSS INJECTION)
+st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+        }
+        header {
+            visibility: hidden !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 # AUTO REFRESH 5 MENIT
 st_autorefresh(interval=300000, limit=None, key="maritim_refresh")
@@ -94,8 +111,8 @@ def fetch_all_data():
     return df_main, None
 
 # --- TAMPILAN DASHBOARD ---
-st.title("🌊 Peta Peringatan Dini AWS Maritim")
-st.markdown("Monitoring Site: **Lembar, Pemenang, Kayangan** *(Klik ikon stasiun di peta untuk melihat grafik)*")
+st.title("🌊 Peta Peringatan Dini Tinggi Gelombang Jalur Penyeberangan NTB")
+st.markdown("Monitoring Site: **Pelabuhan Lembar, Pemenang, Kayangan** *(Klik ikon stasiun di peta untuk melihat grafik)*")
 
 with st.spinner('Memuat peta dan menarik data dari AWSCenter...'):
     df, error = fetch_all_data()
@@ -105,16 +122,22 @@ if error:
 elif df.empty:
     st.warning("⚠️ Data stasiun untuk Lembar, Pemenang, atau Kayangan tidak ditemukan di API saat ini.")
 else:
-    # --- SISTEM PERINGATAN DINI (BANNER) ---
-    df_bahaya = df[df['Water Level'] >= BATAS_BAHAYA]
-    df_waspada = df[(df['Water Level'] >= BATAS_WASPADA) & (df['Water Level'] < BATAS_BAHAYA)]
+    # 🎯 SISTEM PERINGATAN DINI (BANNER) - UPDATE 5 KATEGORI
+    df_ekstrem = df[df['Water Level'] > BATAS_EKSTREM]
+    df_sangat_tinggi = df[(df['Water Level'] >= BATAS_SANGAT_TINGGI) & (df['Water Level'] <= BATAS_EKSTREM)]
+    df_tinggi = df[(df['Water Level'] >= BATAS_TINGGI) & (df['Water Level'] < BATAS_SANGAT_TINGGI)]
+    df_sedang = df[(df['Water Level'] >= BATAS_SEDANG) & (df['Water Level'] < BATAS_TINGGI)]
 
-    if not df_bahaya.empty:
-        st.error(f"🚨 PERINGATAN BAHAYA: {len(df_bahaya)} stasiun mendeteksi gelombang > {BATAS_BAHAYA} meter!")
-    elif not df_waspada.empty:
-        st.warning(f"⚠️ PERINGATAN WASPADA: {len(df_waspada)} stasiun mendeteksi gelombang > {BATAS_WASPADA} meter.")
+    if not df_ekstrem.empty:
+        st.error(f"☠️ PERINGATAN EKSTREM: {len(df_ekstrem)} stasiun mendeteksi gelombang > {BATAS_EKSTREM} meter!")
+    elif not df_sangat_tinggi.empty:
+        st.error(f"🚨 PERINGATAN SANGAT TINGGI: {len(df_sangat_tinggi)} stasiun mendeteksi gelombang 4.0 - 6.0 meter!")
+    elif not df_tinggi.empty:
+        st.error(f"🛑 PERINGATAN TINGGI (BAHAYA): {len(df_tinggi)} stasiun mendeteksi gelombang 2.5 - 4.0 meter!")
+    elif not df_sedang.empty:
+        st.warning(f"⚠️ PERINGATAN SEDANG (WASPADA): {len(df_sedang)} stasiun mendeteksi gelombang 1.25 - 2.5 meter.")
     else:
-        st.success("✅ Kondisi tinggi gelombang di semua site terpantau AMAN.")
+        st.success("✅ Kondisi tinggi gelombang di semua site terpantau AMAN / RENDAH (< 1.25 meter).")
 
     # --- PEMBUATAN PETA (FOLIUM) ---
     center_lat = df['lat'].mean()
@@ -134,13 +157,18 @@ else:
             
         popup_html += "</div>"
 
+        # 🎯 LOGIKA WARNA PIN - UPDATE 5 KATEGORI
         wl_val = row['Water Level']
-        if wl_val >= BATAS_BAHAYA:
-            pin_color = 'red'; pin_icon = 'warning-sign'
-        elif wl_val >= BATAS_WASPADA:
-            pin_color = 'orange'; pin_icon = 'info-sign'
+        if wl_val > BATAS_EKSTREM:
+            pin_color = 'black'; pin_icon = 'flash' # Petir hitam
+        elif wl_val >= BATAS_SANGAT_TINGGI:
+            pin_color = 'darkred'; pin_icon = 'exclamation-sign' # Merah tua
+        elif wl_val >= BATAS_TINGGI:
+            pin_color = 'red'; pin_icon = 'warning-sign' # Merah terang
+        elif wl_val >= BATAS_SEDANG:
+            pin_color = 'orange'; pin_icon = 'info-sign' # Orange
         else:
-            pin_color = 'green'; pin_icon = 'tint' 
+            pin_color = 'green'; pin_icon = 'tint' # Hijau
 
         folium.Marker(
             location=[row['lat'], row['lng']],
@@ -149,14 +177,17 @@ else:
             icon=folium.Icon(color=pin_color, icon=pin_icon)
         ).add_to(m)
 
+    # 🎯 UPDATE LEGEND - 5 KATEGORI BMKG
     template = """
     {% macro html(this, kwargs) %}
-    <div style="position: absolute; bottom: 30px; left: 30px; width: 230px; height: 130px; background-color: white; border: 2px solid grey; z-index:9999; font-size:14px; color: black; padding: 10px; border-radius: 8px; box-shadow: 3px 3px 5px rgba(0,0,0,0.3);">
-        <b style="color: black;">🌊 Keterangan Water Level</b><br>
+    <div style="position: absolute; bottom: 30px; left: 30px; width: 310px; height: 180px; background-color: white; border: 2px solid grey; z-index:9999; font-size:13px; color: black; padding: 10px; border-radius: 8px; box-shadow: 3px 3px 5px rgba(0,0,0,0.3);">
+        <b style="color: black;">🌊 Kategori Gelombang (BMKG)</b><br>
         <hr style="margin: 5px 0; border: 1px solid grey;">
-        <i class="fa fa-circle" style="color:red"></i> <span style="color: black;">Bahaya (&ge; 2.50 m)</span><br>
-        <i class="fa fa-circle" style="color:orange"></i> <span style="color: black;">Waspada (1.25 - 2.49 m)</span><br>
-        <i class="fa fa-circle" style="color:green"></i> <span style="color: black;">Aman (&lt; 1.25 m)</span>
+        <i class="fa fa-bolt" style="color:black; margin-right: 5px; width: 15px; text-align: center;"></i> <span style="color: black;">Ekstrem (&gt; 6.00 m)</span><br>
+        <i class="fa fa-exclamation-triangle" style="color:darkred; margin-right: 5px; width: 15px; text-align: center;"></i> <span style="color: black;">Sangat Tinggi (4.00 - 6.00 m)</span><br>
+        <i class="fa fa-exclamation-circle" style="color:red; margin-right: 5px; width: 15px; text-align: center;"></i> <span style="color: black;">Tinggi (2.50 - 3.99 m)</span><br>
+        <i class="fa fa-info-circle" style="color:orange; margin-right: 5px; width: 15px; text-align: center;"></i> <span style="color: black;">Sedang (1.25 - 2.49 m)</span><br>
+        <i class="fa fa-tint" style="color:green; margin-right: 5px; width: 15px; text-align: center;"></i> <span style="color: black;">Rendah (&lt; 1.25 m)</span>
     </div>
     {% endmacro %}
     """
@@ -186,16 +217,13 @@ else:
                 df_hist = df_hist[df_hist['name_station'] == selected_station]
                 
                 if not df_hist.empty:
-                    # 🎯 KONVERSI WAKTU DAN RESAMPLE PER 30 MENIT (DATA ASLI)
                     df_hist['tanggal'] = pd.to_datetime(df_hist['tanggal'])
                     df_hist = df_hist.set_index('tanggal')
                     
-                    # Kelompokkan data menjadi rata-rata per 30 Menit
                     df_resampled = df_hist['Water Level'].resample('30min').mean().reset_index()
-                    df_resampled = df_resampled.dropna() # Buang waktu yang kosong datanya
+                    df_resampled = df_resampled.dropna()
                     
                     if not df_resampled.empty:
-                        # 🎯 BIKIN GRAFIK ALA HIGHCHARTS PAKAI PLOTLY
                         fig = go.Figure()
                         
                         fig.add_trace(go.Scatter(
@@ -250,6 +278,10 @@ else:
     df_tabel = df_tabel.rename(columns={'name_station': 'Nama Stasiun', 'nama_kota': 'Kab/Kota', 'tanggal': 'Update Terakhir (UTC)'})
     
     cols = ['Nama Stasiun', 'Kab/Kota', 'Update Terakhir (UTC)'] + list(PARAM_MAP.keys())
+    df_tabel = df_tabel[cols]
+
+    styled_tabel = df_tabel.style.format(precision=2)
+    st.dataframe(styled_tabel, use_container_width=True, hide_index=True)
     df_tabel = df_tabel[cols]
 
     styled_tabel = df_tabel.style.format(precision=2)
