@@ -33,15 +33,24 @@ PARAM_MAP = {
 
 st.set_page_config(page_title="Peta EWS AWS Maritim", page_icon="🌊", layout="wide")
 
-# MENGHILANGKAN SPACE KOSONG DI ATAS (CSS INJECTION)
+# =========================================================================
+# 🎯 MENGHILANGKAN SPACE KOSONG DI ATAS (CSS INJECTION EXTREME)
+# =========================================================================
 st.markdown("""
     <style>
+        /* Pangkas habis jarak di container utama */
         .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
+            padding-top: 0rem !important;
+            padding-bottom: 0rem !important;
         }
+        /* Tarik judul utama (h1) ke atas biar mepet */
+        h1 {
+            margin-top: -2rem !important;
+            padding-top: 0rem !important;
+        }
+        /* Buat header (menu kanan atas) transparan tanpa makan tempat */
         header {
-            visibility: hidden !important;
+            background-color: transparent !important;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -112,7 +121,6 @@ def fetch_all_data():
 
 # --- TAMPILAN DASHBOARD ---
 st.title("🌊 Peta Peringatan Dini Tinggi Gelombang Jalur Penyeberangan NTB")
-# 🎯 Teks petunjuk dihilangkan
 st.markdown("Monitoring Site: **Pelabuhan Lembar, Pemenang, Kayangan**")
 
 with st.spinner('Memuat peta dan menarik data dari AWSCenter...'):
@@ -158,7 +166,6 @@ else:
             
         popup_html += "</div>"
 
-        # 🎯 LOGIKA WARNA PIN - UPDATE 5 KATEGORI
         wl_val = row['Water Level']
         if wl_val > BATAS_EKSTREM:
             pin_color = 'black'; pin_icon = 'flash' 
@@ -174,12 +181,10 @@ else:
         folium.Marker(
             location=[row['lat'], row['lng']],
             popup=folium.Popup(popup_html, max_width=350),
-            # 🎯 Teks petunjuk dihilangkan, sisa nama stasiun aja
             tooltip=f"{row['name_station']}",
             icon=folium.Icon(color=pin_color, icon=pin_icon)
         ).add_to(m)
 
-    # 🎯 UPDATE LEGEND - 5 KATEGORI BMKG
     template = """
     {% macro html(this, kwargs) %}
     <div style="position: absolute; bottom: 30px; left: 30px; width: 310px; height: 180px; background-color: white; border: 2px solid grey; z-index:9999; font-size:13px; color: black; padding: 10px; border-radius: 8px; box-shadow: 3px 3px 5px rgba(0,0,0,0.3);">
@@ -197,7 +202,6 @@ else:
     macro._template = Template(template)
     m.get_root().add_child(macro)
 
-    # RENDER PETA DAN TANGKAP EVENT KLIK
     map_data = st_folium(m, use_container_width=True, height=650, returned_objects=["last_object_clicked"])
 
     # --- 📈 GRAFIK MUNCUL HANYA JIKA STASIUN DIKLIK ---
