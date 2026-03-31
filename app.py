@@ -33,9 +33,13 @@ PARAM_MAP = {
 
 st.set_page_config(page_title="Peta EWS AWS Maritim", page_icon="🌊", layout="wide")
 
+# 🎯 UPDATE: Kasih ruang napas di bagian bawah (padding-bottom: 4rem)
 st.markdown("""
     <style>
-        .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; }
+        .block-container { 
+            padding-top: 0rem !important; 
+            padding-bottom: 4rem !important; 
+        }
         h1 { margin-top: -2rem !important; padding-top: 0rem !important; }
         header { background-color: transparent !important; }
     </style>
@@ -123,9 +127,9 @@ else:
     elif not df_sangat_tinggi.empty:
         st.error(f"🚨 PERINGATAN SANGAT TINGGI: {len(df_sangat_tinggi)} stasiun mendeteksi gelombang 4.0 - 6.0 meter!")
     elif not df_tinggi.empty:
-        st.error(f"⚠️ PERINGATAN TINGGI (BAHAYA): {len(df_tinggi)} stasiun mendeteksi gelombang 2.5 - 4.0 meter!")
+        st.error(f"🛑 PERINGATAN TINGGI (BAHAYA): {len(df_tinggi)} stasiun mendeteksi gelombang 2.5 - 4.0 meter!")
     elif not df_sedang.empty:
-        st.warning(f"🟡 PERINGATAN SEDANG (WASPADA): {len(df_sedang)} stasiun mendeteksi gelombang 1.25 - 2.5 meter.")
+        st.warning(f"⚠️ PERINGATAN SEDANG (WASPADA): {len(df_sedang)} stasiun mendeteksi gelombang 1.25 - 2.5 meter.")
     else:
         st.success("✅ Kondisi tinggi gelombang di semua site terpantau AMAN / RENDAH (< 1.25 meter).")
 
@@ -210,12 +214,12 @@ else:
             elif current_wl >= BATAS_TINGGI:
                 bg_color, border_color, text_color = "#fff0f0", "#e53935", "#d32f2f" 
                 title = "Peringatan Gelombang Tinggi"
-                icon = "⚠️"
+                icon = "🛑" 
                 desc = f"Terdapat potensi gelombang tinggi mencapai {current_wl:.2f}m. SANGAT BERBAHAYA bagi perahu nelayan, tongkang, dan kapal feri. Harap berhati-hati dan ikuti arahan dari otoritas setempat."
             elif current_wl >= BATAS_SEDANG:
                 bg_color, border_color, text_color = "#fff8e1", "#ffb300", "#f57f17" 
-                title = "Peringatan Gelombang Sedang"
-                icon = "🟡"
+                title = "Peringatan Gelombang Sedang (Waspada)"
+                icon = "⚠️" 
                 desc = f"Terdapat potensi gelombang sedang dengan ketinggian {current_wl:.2f}m pada perairan ini. Berisiko bagi perahu nelayan dan kapal kecil. Harap berhati-hati dan ikuti arahan dari otoritas setempat."
             else:
                 bg_color, border_color, text_color = "#e8f5e9", "#43a047", "#2e7d32" 
@@ -233,7 +237,7 @@ else:
                 font-family: sans-serif;
             ">
                 <div style="display: flex; align-items: center; color: {text_color}; font-weight: bold; font-size: 18px; margin-bottom: 8px;">
-                    <span style="font-size: 22px; margin-right: 10px;">{icon}</span> {title}
+                    <span style="font-size: 24px; margin-right: 12px;">{icon}</span> {title}
                 </div>
                 <div style="color: {'#e0e0e0' if current_wl > BATAS_EKSTREM else '#555555'}; font-size: 15px; line-height: 1.5;">
                     {desc}
@@ -325,13 +329,11 @@ _Pesan otomatis dikirim dari Dashboard EWS Maritim NTB_"""
                                 file_name=f"Laporan_{selected_station.replace(' ', '_')}.txt",
                                 mime="text/plain"
                             )
-                            st.caption("Download rangkuman teks untuk grup WA.")
+                            st.caption("Unduh rangkuman teks untuk grup WA.")
                             
-                            # 🎯 FITUR BARU: DOWNLOAD DATA CSV (PASANG SURUT)
                             st.markdown("---")
                             st.markdown("💾 **Data Historis Pasang Surut:**")
                             
-                            # Siapkan dataframe yang rapi untuk di-download
                             df_download = df_resampled.copy()
                             df_download.rename(columns={'tanggal': 'Waktu (UTC)', 'Water Level': 'Tinggi Gelombang (m)'}, inplace=True)
                             csv_data = df_download.to_csv(index=False).encode('utf-8')
